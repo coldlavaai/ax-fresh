@@ -221,12 +221,13 @@ function Navbar() {
 
   const links = [
     { label: "Home", href: "#" },
+    { label: "Trip Builder", href: "/trip-builder", special: "primary" },
     { label: "Destinations", href: "#destinations" },
     { label: "Benefits", href: "#benefits" },
     { label: "How It Works", href: "#how-it-works" },
     { label: "FAQ", href: "#faq" },
     { label: "Videos", href: "#videos" },
-    { label: "Invest", href: "#investor" },
+    { label: "Invest", href: "#investor", special: "secondary" },
   ];
 
   const handleClick = (href: string) => {
@@ -261,18 +262,56 @@ function Navbar() {
 
           {/* Desktop nav */}
           <div className="hidden lg:flex items-center gap-8">
-            {links.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => handleClick(link.href)}
-                className={`text-sm font-medium tracking-wide transition-colors duration-300 hover:text-sunset-400 ${
-                  scrolled ? "text-text-secondary" : "text-white/80"
-                } ${link.label === "Invest" ? (scrolled ? "bg-sunset-500 text-white px-5 py-2 rounded-full hover:bg-sunset-600 hover:text-white" : "bg-white/20 backdrop-blur-sm text-white px-5 py-2 rounded-full hover:bg-white/30 hover:text-white") : ""}`}
-              >
-                {link.label}
-              </a>
-            ))}
+            {links.map((link) => {
+              const isPrimary = link.special === "primary";
+              const isSecondary = link.special === "secondary";
+
+              if (isPrimary) {
+                return (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className={`text-sm font-bold tracking-wide transition-all duration-300 px-6 py-2.5 rounded-full ${
+                      scrolled
+                        ? "bg-sunset-500 text-white hover:bg-sunset-600 hover:scale-105 shadow-md hover:shadow-lg"
+                        : "bg-white text-sunset-500 hover:bg-white/90 hover:scale-105 shadow-lg"
+                    }`}
+                  >
+                    {link.label}
+                  </a>
+                );
+              }
+
+              if (isSecondary) {
+                return (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => handleClick(link.href)}
+                    className={`text-sm font-medium tracking-wide transition-all duration-300 px-5 py-2 rounded-full ${
+                      scrolled
+                        ? "bg-sunset-500/10 text-sunset-600 hover:bg-sunset-500/20"
+                        : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                    }`}
+                  >
+                    {link.label}
+                  </a>
+                );
+              }
+
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => handleClick(link.href)}
+                  className={`text-sm font-medium tracking-wide transition-colors duration-300 hover:text-sunset-400 ${
+                    scrolled ? "text-text-secondary" : "text-white/80"
+                  }`}
+                >
+                  {link.label}
+                </a>
+              );
+            })}
           </div>
 
           {/* Mobile hamburger */}
@@ -317,16 +356,32 @@ function Navbar() {
             className="fixed inset-0 z-40 bg-white pt-20 px-6 lg:hidden"
           >
             <div className="flex flex-col gap-1">
-              {links.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => handleClick(link.href)}
-                  className="text-text-primary font-[family-name:var(--font-heading)] text-2xl font-semibold py-4 border-b border-border hover:text-sunset-500 transition-colors"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {links.map((link) => {
+                const isPrimary = link.special === "primary";
+
+                if (isPrimary) {
+                  return (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className="text-white bg-sunset-500 font-[family-name:var(--font-heading)] text-2xl font-bold py-5 px-6 rounded-2xl hover:bg-sunset-600 transition-all mb-4 text-center shadow-lg"
+                    >
+                      {link.label} →
+                    </a>
+                  );
+                }
+
+                return (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => handleClick(link.href)}
+                    className="text-text-primary font-[family-name:var(--font-heading)] text-2xl font-semibold py-4 border-b border-border hover:text-sunset-500 transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                );
+              })}
               <div className="mt-8 flex flex-col gap-3">
                 <a
                   href="mailto:invest@awesomeexperiences.com"
@@ -533,6 +588,26 @@ function DestinationsSection() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* CTA */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeUp}
+          custom={0}
+          className="text-center mt-16"
+        >
+          <p className="text-text-secondary text-lg mb-6">
+            Ready to explore these destinations and more?
+          </p>
+          <a
+            href="/trip-builder"
+            className="inline-block px-12 py-5 bg-sunset-500 text-white font-bold text-lg rounded-full hover:bg-sunset-600 hover:scale-105 hover:shadow-xl transition-all duration-300"
+          >
+            Build Your Custom Trip →
+          </a>
+        </motion.div>
       </div>
     </section>
   );
@@ -653,6 +728,23 @@ function HowItWorksSection() {
             </motion.div>
           ))}
         </div>
+
+        {/* CTA */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={fadeUp}
+          custom={0}
+          className="text-center mt-20"
+        >
+          <a
+            href="/trip-builder"
+            className="inline-block px-12 py-5 bg-sunset-500 text-white font-bold text-lg rounded-full hover:bg-sunset-600 hover:scale-105 hover:shadow-xl transition-all duration-300"
+          >
+            Try the AI Trip Builder Now →
+          </a>
+        </motion.div>
       </div>
     </section>
   );
@@ -678,9 +770,15 @@ function ParallaxBreak() {
         <h2 className="font-[family-name:var(--font-heading)] text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-4">
           Life is Short.
         </h2>
-        <p className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl italic text-white/80 font-light">
+        <p className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl italic text-white/80 font-light mb-8">
           Make every trip count.
         </p>
+        <a
+          href="/trip-builder"
+          className="inline-block px-12 py-5 bg-white text-sunset-500 font-bold text-lg rounded-full hover:bg-white/90 hover:scale-105 hover:shadow-2xl transition-all duration-300"
+        >
+          Start Planning Your Trip
+        </a>
       </motion.div>
     </section>
   );
