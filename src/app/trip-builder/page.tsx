@@ -12,7 +12,7 @@ import {
   SpeedIcon,
 } from "@/components/Icons";
 
-type Step = "preferences" | "generating" | "itinerary" | "refining";
+type Step = "preferences" | "suggestions" | "generating" | "itinerary" | "refining";
 
 interface Preferences {
   destination: string;
@@ -41,12 +41,13 @@ interface Day {
 }
 
 const destinations = [
-  { name: "Santorini, Greece", image: "https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?w=600&q=80" },
-  { name: "Amalfi Coast, Italy", image: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=600&q=80" },
-  { name: "Maldives", image: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=600&q=80" },
-  { name: "Swiss Alps", image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600&q=80" },
-  { name: "Tokyo, Japan", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80" },
-  { name: "Bali, Indonesia", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80" },
+  { name: "Santorini, Greece", image: "https://images.unsplash.com/photo-1539367628448-4bc5c9d171c8?w=600&q=80", tags: ["culture", "beach", "culinary", "nightlife"] },
+  { name: "Amalfi Coast, Italy", image: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=600&q=80", tags: ["culture", "beach", "culinary", "art"] },
+  { name: "Maldives", image: "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=600&q=80", tags: ["beach", "wellness", "adventure"] },
+  { name: "Swiss Alps", image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?w=600&q=80", tags: ["adventure", "wellness", "culture"] },
+  { name: "Tokyo, Japan", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&q=80", tags: ["culture", "culinary", "shopping", "nightlife", "art"] },
+  { name: "Bali, Indonesia", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", tags: ["beach", "wellness", "culture", "adventure"] },
+  { name: "I'm not sure", image: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&q=80", tags: [] },
 ];
 
 const interests = [
@@ -59,6 +60,33 @@ const interests = [
   "🌃 Nightlife",
   "🧘 Wellness & Spa",
 ];
+
+// Match interests to destination tags
+const getDestinationSuggestions = (selectedInterests: string[]): typeof destinations => {
+  const interestTags = selectedInterests.map(interest => {
+    if (interest.includes("Culture")) return "culture";
+    if (interest.includes("Adventure")) return "adventure";
+    if (interest.includes("Beach")) return "beach";
+    if (interest.includes("Culinary")) return "culinary";
+    if (interest.includes("Art")) return "art";
+    if (interest.includes("Shopping")) return "shopping";
+    if (interest.includes("Nightlife")) return "nightlife";
+    if (interest.includes("Wellness")) return "wellness";
+    return "";
+  }).filter(Boolean);
+
+  // Score each destination by matching tags
+  const scored = destinations
+    .filter(d => d.name !== "I'm not sure")
+    .map(dest => ({
+      ...dest,
+      score: dest.tags.filter(tag => interestTags.includes(tag)).length
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  // Return top 3 destinations
+  return scored.slice(0, 3);
+};
 
 export default function TripBuilderPage() {
   const [step, setStep] = useState<Step>("preferences");
@@ -73,6 +101,18 @@ export default function TripBuilderPage() {
   });
   const [itinerary, setItinerary] = useState<Day[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [suggestedDestinations, setSuggestedDestinations] = useState<typeof destinations>([]);
+
+  const handlePreferencesNext = () => {
+    if (preferences.destination === "I'm not sure") {
+      // Generate suggestions based on interests
+      const suggestions = getDestinationSuggestions(preferences.interests);
+      setSuggestedDestinations(suggestions);
+      setStep("suggestions");
+    } else {
+      startGeneration();
+    }
+  };
 
   const startGeneration = () => {
     setStep("generating");
@@ -225,6 +265,15 @@ export default function TripBuilderPage() {
               <PreferencesForm
                 preferences={preferences}
                 setPreferences={setPreferences}
+                onNext={handlePreferencesNext}
+              />
+            )}
+
+            {step === "suggestions" && (
+              <DestinationSuggestions
+                suggestions={suggestedDestinations}
+                preferences={preferences}
+                setPreferences={setPreferences}
                 onNext={startGeneration}
               />
             )}
@@ -286,14 +335,29 @@ function PreferencesForm({
                     : "hover:scale-105"
                 }`}
               >
-                <div
-                  className="absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url('${dest.image}')` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-white text-sm font-medium">{dest.name}</p>
-                </div>
+                {dest.name === "I'm not sure" ? (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-br from-sunset-400 via-purple-500 to-blue-500" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <svg className="w-12 h-12 text-white mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-white text-sm font-medium">{dest.name}</p>
+                      <p className="text-white/80 text-xs mt-1">We'll help you choose</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url('${dest.image}')` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-white text-sm font-medium">{dest.name}</p>
+                    </div>
+                  </>
+                )}
                 {preferences.destination === dest.name && (
                   <div className="absolute top-2 right-2 w-6 h-6 bg-sunset-500 rounded-full flex items-center justify-center">
                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -424,6 +488,99 @@ function PreferencesForm({
           Generate My Perfect Trip →
         </button>
       </div>
+    </motion.div>
+  );
+}
+
+function DestinationSuggestions({
+  suggestions,
+  preferences,
+  setPreferences,
+  onNext,
+}: {
+  suggestions: typeof destinations;
+  preferences: Preferences;
+  setPreferences: (p: Preferences) => void;
+  onNext: () => void;
+}) {
+  const [selectedDestination, setSelectedDestination] = useState("");
+
+  const handleSelect = (destName: string) => {
+    setSelectedDestination(destName);
+    setPreferences({ ...preferences, destination: destName });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="bg-white rounded-3xl shadow-xl p-8 md:p-12"
+    >
+      <h2 className="font-[family-name:var(--font-heading)] text-3xl font-bold mb-4">
+        Perfect! Based on Your <span className="italic font-normal text-sunset-500">Interests</span>
+      </h2>
+      <p className="text-text-secondary text-lg mb-8">
+        We think you'd love these destinations. Pick your favorite to continue:
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {suggestions.map((dest) => (
+          <motion.button
+            key={dest.name}
+            onClick={() => handleSelect(dest.name)}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
+            className={`relative h-64 rounded-2xl overflow-hidden transition-all duration-300 ${
+              selectedDestination === dest.name
+                ? "ring-4 ring-sunset-500"
+                : "hover:shadow-xl"
+            }`}
+          >
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url('${dest.image}')` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6">
+              <h3 className="text-white text-2xl font-bold mb-2">{dest.name}</h3>
+              <div className="flex flex-wrap gap-2">
+                {dest.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-xs font-medium capitalize"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {selectedDestination === dest.name && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-4 right-4 w-10 h-10 bg-sunset-500 rounded-full flex items-center justify-center shadow-lg"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                </svg>
+              </motion.div>
+            )}
+          </motion.button>
+        ))}
+      </div>
+
+      <button
+        onClick={onNext}
+        disabled={!selectedDestination}
+        className={`w-full py-5 rounded-full font-bold text-lg transition-all ${
+          selectedDestination
+            ? "bg-sunset-500 text-white hover:bg-sunset-600 hover:scale-105 hover:shadow-xl"
+            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+        }`}
+      >
+        Continue with {selectedDestination || "Selected Destination"} →
+      </button>
     </motion.div>
   );
 }
