@@ -32,12 +32,32 @@ interface Activity {
   duration: string;
   price: number;
   image: string;
+  category: string;
 }
 
 interface Day {
   dayNumber: number;
   date: string;
-  activities: Activity[];
+  activityOptions: Activity[]; // Multiple options per day
+}
+
+interface FlightOption {
+  id: string;
+  airline: string;
+  departure: string;
+  arrival: string;
+  duration: string;
+  price: number;
+  stops: number;
+}
+
+interface HotelOption {
+  id: string;
+  name: string;
+  rating: number;
+  image: string;
+  amenities: string[];
+  pricePerNight: number;
 }
 
 const destinations = [
@@ -100,6 +120,11 @@ export default function TripBuilderPage() {
     pace: "moderate",
   });
   const [itinerary, setItinerary] = useState<Day[]>([]);
+  const [flightOptions, setFlightOptions] = useState<FlightOption[]>([]);
+  const [hotelOptions, setHotelOptions] = useState<HotelOption[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<Set<string>>(new Set());
+  const [selectedFlight, setSelectedFlight] = useState<string>("");
+  const [selectedHotel, setSelectedHotel] = useState<string>("");
   const [totalPrice, setTotalPrice] = useState(0);
   const [suggestedDestinations, setSuggestedDestinations] = useState<typeof destinations>([]);
 
@@ -120,8 +145,17 @@ export default function TripBuilderPage() {
     // Simulate AI generation
     setTimeout(() => {
       const generatedItinerary = generateItinerary(preferences);
+      const flights = generateFlightOptions();
+      const hotels = generateHotelOptions(preferences.destination);
+
       setItinerary(generatedItinerary);
-      calculateTotalPrice(generatedItinerary);
+      setFlightOptions(flights);
+      setHotelOptions(hotels);
+
+      // Auto-select first flight and hotel
+      setSelectedFlight(flights[0].id);
+      setSelectedHotel(hotels[0].id);
+
       setStep("itinerary");
     }, 4000);
   };
@@ -137,48 +171,141 @@ export default function TripBuilderPage() {
       date: new Date(
         new Date(prefs.startDate).getTime() + i * 24 * 60 * 60 * 1000
       ).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-      activities: generateDayActivities(i + 1, prefs),
+      activityOptions: generateDayActivityOptions(i + 1, prefs),
     }));
   };
 
-  const generateDayActivities = (dayNum: number, prefs: Preferences): Activity[] => {
+  const generateDayActivityOptions = (dayNum: number, prefs: Preferences): Activity[] => {
     const activityPool = {
       "Santorini, Greece": [
-        { title: "Oia Sunset Tour", description: "Watch the world-famous sunset from the white cliffs", duration: "3h", price: 45 },
-        { title: "Wine Tasting Experience", description: "Sample local Assyrtiko wines at a vineyard", duration: "2h", price: 65 },
-        { title: "Catamaran Cruise", description: "Sail around the caldera with lunch included", duration: "5h", price: 120 },
-        { title: "Ancient Akrotiri Tour", description: "Explore the preserved Minoan Bronze Age settlement", duration: "2h", price: 35 },
+        { title: "Oia Sunset Tour", description: "Watch the world-famous sunset from the white cliffs", duration: "3h", price: 45, category: "Culture", time: "6:00 PM" },
+        { title: "Wine Tasting Experience", description: "Sample local Assyrtiko wines at a vineyard", duration: "2h", price: 65, category: "Culinary", time: "2:00 PM" },
+        { title: "Catamaran Cruise", description: "Sail around the caldera with lunch included", duration: "5h", price: 120, category: "Adventure", time: "10:00 AM" },
+        { title: "Ancient Akrotiri Tour", description: "Explore the preserved Minoan Bronze Age settlement", duration: "2h", price: 35, category: "Culture", time: "9:00 AM" },
+        { title: "Beach Day at Red Beach", description: "Relax on the famous red sand beach", duration: "4h", price: 0, category: "Beach", time: "11:00 AM" },
+        { title: "Traditional Greek Dinner", description: "Enjoy authentic Greek cuisine with sea views", duration: "2h", price: 55, category: "Culinary", time: "7:00 PM" },
       ],
       "Amalfi Coast, Italy": [
-        { title: "Positano Walking Tour", description: "Stroll through colorful clifftop streets", duration: "3h", price: 40 },
-        { title: "Cooking Class", description: "Learn authentic Italian cuisine from a local chef", duration: "4h", price: 95 },
-        { title: "Boat Tour to Capri", description: "Visit the Blue Grotto and stunning coastline", duration: "6h", price: 150 },
-        { title: "Limoncello Tasting", description: "Sample local lemon liqueur at a family farm", duration: "1.5h", price: 25 },
+        { title: "Positano Walking Tour", description: "Stroll through colorful clifftop streets", duration: "3h", price: 40, category: "Culture", time: "9:00 AM" },
+        { title: "Cooking Class", description: "Learn authentic Italian cuisine from a local chef", duration: "4h", price: 95, category: "Culinary", time: "3:00 PM" },
+        { title: "Boat Tour to Capri", description: "Visit the Blue Grotto and stunning coastline", duration: "6h", price: 150, category: "Adventure", time: "10:00 AM" },
+        { title: "Limoncello Tasting", description: "Sample local lemon liqueur at a family farm", duration: "1.5h", price: 25, category: "Culinary", time: "2:00 PM" },
+        { title: "Spa & Wellness Day", description: "Relax at a luxury spa overlooking the coast", duration: "3h", price: 85, category: "Wellness", time: "11:00 AM" },
+        { title: "Sunset Dinner in Ravello", description: "Fine dining with panoramic coast views", duration: "2.5h", price: 75, category: "Culinary", time: "7:30 PM" },
       ],
     };
 
     const activities = activityPool[prefs.destination as keyof typeof activityPool] || activityPool["Santorini, Greece"];
-    const selectedActivities = activities.slice(0, prefs.pace === "relaxed" ? 2 : prefs.pace === "moderate" ? 3 : 4);
+    const dest = destinations.find(d => d.name === prefs.destination);
 
-    return selectedActivities.map((act, i) => ({
+    return activities.map((act, i) => ({
       id: `${dayNum}-${i}`,
-      time: i === 0 ? "9:00 AM" : i === 1 ? "2:00 PM" : i === 2 ? "6:00 PM" : "8:00 PM",
+      time: act.time,
       title: act.title,
       description: act.description,
       duration: act.duration,
       price: act.price,
-      image: destinations.find(d => d.name === prefs.destination)?.image || destinations[0].image,
+      category: act.category,
+      image: dest?.image || destinations[0].image,
     }));
   };
 
-  const calculateTotalPrice = (days: Day[]) => {
-    const activitiesTotal = days.reduce(
-      (sum, day) => sum + day.activities.reduce((daySum, act) => daySum + act.price, 0),
-      0
-    );
-    const accommodation = days.length * 120; // $120/night average
-    const flights = 450 * preferences.travelers;
-    setTotalPrice(activitiesTotal + accommodation + flights);
+  const generateFlightOptions = (): FlightOption[] => {
+    return [
+      { id: "flight-1", airline: "British Airways", departure: "10:30 AM", arrival: "3:45 PM", duration: "3h 15m", price: 285, stops: 0 },
+      { id: "flight-2", airline: "EasyJet", departure: "6:15 AM", arrival: "11:30 AM", duration: "3h 15m", price: 189, stops: 0 },
+      { id: "flight-3", airline: "Ryanair", departure: "2:20 PM", arrival: "8:15 PM", duration: "4h 55m", price: 145, stops: 1 },
+    ];
+  };
+
+  const generateHotelOptions = (destination: string): HotelOption[] => {
+    const hotelPools = {
+      "Santorini, Greece": [
+        {
+          id: "hotel-1",
+          name: "Canaves Oia Suites",
+          rating: 5,
+          image: "https://images.unsplash.com/photo-1602002418082-a4443e081dd1?w=400&q=80",
+          amenities: ["Infinity Pool", "Spa", "Sea View", "Restaurant"],
+          pricePerNight: 450,
+        },
+        {
+          id: "hotel-2",
+          name: "Astra Suites",
+          rating: 4.5,
+          image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&q=80",
+          amenities: ["Pool", "Breakfast", "Balcony", "WiFi"],
+          pricePerNight: 280,
+        },
+        {
+          id: "hotel-3",
+          name: "Santorini View Hotel",
+          rating: 4,
+          image: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400&q=80",
+          amenities: ["WiFi", "Breakfast", "Terrace"],
+          pricePerNight: 165,
+        },
+      ],
+      "Amalfi Coast, Italy": [
+        {
+          id: "hotel-1",
+          name: "Belmond Hotel Caruso",
+          rating: 5,
+          image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400&q=80",
+          amenities: ["Infinity Pool", "Michelin Restaurant", "Spa", "Gardens"],
+          pricePerNight: 520,
+        },
+        {
+          id: "hotel-2",
+          name: "Hotel Santa Caterina",
+          rating: 4.5,
+          image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&q=80",
+          amenities: ["Beach Access", "Pool", "Restaurant", "Sea View"],
+          pricePerNight: 340,
+        },
+        {
+          id: "hotel-3",
+          name: "Positano Inn",
+          rating: 4,
+          image: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=400&q=80",
+          amenities: ["WiFi", "Breakfast", "Central Location"],
+          pricePerNight: 195,
+        },
+      ],
+    };
+
+    return hotelPools[destination as keyof typeof hotelPools] || hotelPools["Santorini, Greece"];
+  };
+
+  // Dynamic price calculation based on selections
+  useEffect(() => {
+    if (itinerary.length === 0) return;
+
+    const activitiesTotal = itinerary.reduce((sum, day) => {
+      return sum + day.activityOptions
+        .filter(act => selectedActivities.has(act.id))
+        .reduce((daySum, act) => daySum + act.price, 0);
+    }, 0);
+
+    const selectedFlightOption = flightOptions.find(f => f.id === selectedFlight);
+    const flightTotal = selectedFlightOption ? selectedFlightOption.price * preferences.travelers : 0;
+
+    const selectedHotelOption = hotelOptions.find(h => h.id === selectedHotel);
+    const hotelTotal = selectedHotelOption ? selectedHotelOption.pricePerNight * itinerary.length : 0;
+
+    setTotalPrice(activitiesTotal + flightTotal + hotelTotal);
+  }, [selectedActivities, selectedFlight, selectedHotel, itinerary, flightOptions, hotelOptions, preferences.travelers]);
+
+  const toggleActivity = (activityId: string) => {
+    setSelectedActivities(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(activityId)) {
+        newSet.delete(activityId);
+      } else {
+        newSet.add(activityId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -283,8 +410,16 @@ export default function TripBuilderPage() {
             {step === "itinerary" && (
               <ItineraryDisplay
                 itinerary={itinerary}
+                flightOptions={flightOptions}
+                hotelOptions={hotelOptions}
+                selectedActivities={selectedActivities}
+                selectedFlight={selectedFlight}
+                selectedHotel={selectedHotel}
                 totalPrice={totalPrice}
                 preferences={preferences}
+                onToggleActivity={toggleActivity}
+                onSelectFlight={setSelectedFlight}
+                onSelectHotel={setSelectedHotel}
               />
             )}
           </AnimatePresence>
@@ -647,12 +782,28 @@ function GeneratingAnimation() {
 
 function ItineraryDisplay({
   itinerary,
+  flightOptions,
+  hotelOptions,
+  selectedActivities,
+  selectedFlight,
+  selectedHotel,
   totalPrice,
   preferences,
+  onToggleActivity,
+  onSelectFlight,
+  onSelectHotel,
 }: {
   itinerary: Day[];
+  flightOptions: FlightOption[];
+  hotelOptions: HotelOption[];
+  selectedActivities: Set<string>;
+  selectedFlight: string;
+  selectedHotel: string;
   totalPrice: number;
   preferences: Preferences;
+  onToggleActivity: (id: string) => void;
+  onSelectFlight: (id: string) => void;
+  onSelectHotel: (id: string) => void;
 }) {
   return (
     <motion.div
@@ -660,16 +811,16 @@ function ItineraryDisplay({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      {/* Header */}
+      {/* Header with Dynamic Price */}
       <div className="bg-gradient-to-br from-sunset-500 to-rose-500 rounded-3xl p-8 text-white">
         <h2 className="font-[family-name:var(--font-heading)] text-4xl font-bold mb-4">
-          Your Perfect {preferences.destination} Adventure!
+          Customize Your Perfect {preferences.destination} Adventure!
         </h2>
         <p className="text-white/90 text-lg mb-6">
-          {itinerary.length} days of curated experiences tailored just for you
+          Select your flights, hotel, and activities to build your dream trip
         </p>
 
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 items-center">
           <div className="flex items-center gap-2">
             <MapPinIcon className="w-5 h-5" />
             <span>{preferences.destination}</span>
@@ -678,15 +829,123 @@ function ItineraryDisplay({
             <span className="text-2xl">👥</span>
             <span>{preferences.travelers} {preferences.travelers === 1 ? 'Traveler' : 'Travelers'}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full">
             <span className="text-2xl">💰</span>
-            <span className="text-2xl font-bold">£{totalPrice.toLocaleString()}</span>
+            <div>
+              <div className="text-xs text-white/80">Total Trip Cost</div>
+              <div className="text-3xl font-bold">£{totalPrice.toLocaleString()}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Itinerary Days */}
+      {/* Flight Selection */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold mb-6 flex items-center gap-3">
+          ✈️ Choose Your Flight
+        </h3>
+        <div className="space-y-4">
+          {flightOptions.map((flight) => (
+            <button
+              key={flight.id}
+              onClick={() => onSelectFlight(flight.id)}
+              className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                selectedFlight === flight.id
+                  ? "border-sunset-500 bg-sunset-50"
+                  : "border-gray-200 hover:border-sunset-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="font-bold text-lg">{flight.airline}</span>
+                    {flight.stops === 0 && (
+                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        Direct
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-text-secondary">
+                    <span>{flight.departure} → {flight.arrival}</span>
+                    <span>•</span>
+                    <span>{flight.duration}</span>
+                    {flight.stops > 0 && (
+                      <>
+                        <span>•</span>
+                        <span>{flight.stops} stop{flight.stops > 1 ? 's' : ''}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-sunset-600">£{flight.price}</div>
+                  <div className="text-xs text-text-muted">per person</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Hotel Selection */}
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold mb-6 flex items-center gap-3">
+          🏨 Choose Your Hotel
+        </h3>
+        <div className="space-y-4">
+          {hotelOptions.map((hotel) => (
+            <button
+              key={hotel.id}
+              onClick={() => onSelectHotel(hotel.id)}
+              className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                selectedHotel === hotel.id
+                  ? "border-sunset-500 bg-sunset-50"
+                  : "border-gray-200 hover:border-sunset-300"
+              }`}
+            >
+              <div className="flex gap-4">
+                <div
+                  className="w-24 h-24 rounded-lg bg-cover bg-center flex-shrink-0"
+                  style={{ backgroundImage: `url('${hotel.image}')` }}
+                />
+                <div className="flex-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h4 className="font-bold text-lg">{hotel.name}</h4>
+                      <div className="flex items-center gap-1 mt-1">
+                        {Array.from({ length: Math.floor(hotel.rating) }).map((_, i) => (
+                          <StarIcon key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        ))}
+                        <span className="text-sm text-text-muted ml-1">{hotel.rating}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xl font-bold text-sunset-600">£{hotel.pricePerNight}</div>
+                      <div className="text-xs text-text-muted">per night</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {hotel.amenities.map((amenity) => (
+                      <span
+                        key={amenity}
+                        className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                      >
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Daily Activities Selection */}
       <div className="space-y-6">
+        <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold flex items-center gap-3">
+          📅 Select Your Activities
+        </h3>
         {itinerary.map((day, dayIndex) => (
           <motion.div
             key={day.dayNumber}
@@ -707,52 +966,82 @@ function ItineraryDisplay({
               </div>
             </div>
 
-            <div className="space-y-4">
-              {day.activities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex gap-4 p-4 bg-warm-50 rounded-xl hover:shadow-md transition-all"
-                >
-                  <div
-                    className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0"
-                    style={{ backgroundImage: `url('${activity.image}')` }}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <p className="text-sm text-sunset-500 font-medium">{activity.time}</p>
-                        <h4 className="font-semibold">{activity.title}</h4>
+            <div className="space-y-3">
+              {day.activityOptions.map((activity) => {
+                const isSelected = selectedActivities.has(activity.id);
+                return (
+                  <button
+                    key={activity.id}
+                    onClick={() => onToggleActivity(activity.id)}
+                    className={`w-full text-left flex gap-4 p-4 rounded-xl transition-all ${
+                      isSelected
+                        ? "bg-sunset-50 border-2 border-sunset-500"
+                        : "bg-warm-50 border-2 border-transparent hover:border-sunset-200"
+                    }`}
+                  >
+                    <div className="flex items-start pt-1">
+                      <div
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                          isSelected
+                            ? "bg-sunset-500 border-sunset-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
+                          </svg>
+                        )}
                       </div>
-                      <span className="text-sm font-bold text-sunset-600">£{activity.price}</span>
                     </div>
-                    <p className="text-sm text-text-secondary mb-2">{activity.description}</p>
-                    <span className="text-xs text-text-muted">Duration: {activity.duration}</span>
-                  </div>
-                </div>
-              ))}
+                    <div
+                      className="w-20 h-20 rounded-lg bg-cover bg-center flex-shrink-0"
+                      style={{ backgroundImage: `url('${activity.image}')` }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs px-2 py-0.5 bg-sunset-100 text-sunset-700 rounded-full font-medium">
+                              {activity.category}
+                            </span>
+                            <span className="text-sm text-sunset-500 font-medium">{activity.time}</span>
+                          </div>
+                          <h4 className="font-semibold text-lg">{activity.title}</h4>
+                        </div>
+                        <span className="text-lg font-bold text-sunset-600">
+                          {activity.price === 0 ? "Free" : `£${activity.price}`}
+                        </span>
+                      </div>
+                      <p className="text-sm text-text-secondary mb-2">{activity.description}</p>
+                      <span className="text-xs text-text-muted">Duration: {activity.duration}</span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </motion.div>
         ))}
       </div>
 
       {/* CTA */}
-      <div className="bg-warm-50 rounded-2xl p-8 text-center">
-        <h3 className="font-[family-name:var(--font-heading)] text-2xl font-bold mb-4">
-          Love this itinerary?
+      <div className="bg-gradient-to-br from-warm-100 to-sunset-100 rounded-2xl p-8 text-center border-2 border-sunset-200">
+        <h3 className="font-[family-name:var(--font-heading)] text-3xl font-bold mb-4">
+          Ready to Book Your £{totalPrice.toLocaleString()} Adventure?
         </h3>
-        <p className="text-text-secondary mb-6">
-          Contact us to refine, customize, and book your perfect trip
+        <p className="text-text-secondary text-lg mb-6">
+          Contact us to finalize your booking and make any additional customizations
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
             href="tel:07932619108"
-            className="px-8 py-4 bg-sunset-500 text-white font-bold rounded-full hover:bg-sunset-600 transition-all"
+            className="px-10 py-5 bg-sunset-500 text-white font-bold text-lg rounded-full hover:bg-sunset-600 transition-all hover:scale-105 hover:shadow-xl"
           >
             📞 Call 07932 619108
           </a>
           <a
             href="mailto:invest@awesomeexperiences.com"
-            className="px-8 py-4 border-2 border-sunset-500 text-sunset-500 font-bold rounded-full hover:bg-sunset-50 transition-all"
+            className="px-10 py-5 border-2 border-sunset-500 text-sunset-500 font-bold text-lg rounded-full hover:bg-sunset-50 transition-all hover:scale-105"
           >
             ✉️ Email Us
           </a>
