@@ -93,14 +93,14 @@ const getDestinationSuggestions = (selectedInterests: string[]): typeof destinat
     if (interest.includes("Nightlife")) return "nightlife";
     if (interest.includes("Wellness")) return "wellness";
     return "";
-  }).filter(Boolean);
+  }).filter(Boolean) as string[];
 
   // Score each destination by matching tags
   const scored = destinations
     .filter(d => d.name !== "I'm not sure")
     .map(dest => ({
       ...dest,
-      score: dest.tags.filter(tag => interestTags.includes(tag)).length
+      score: dest.tags.filter(tag => interestTags.includes(tag as string)).length
     }))
     .sort((a, b) => b.score - a.score);
 
