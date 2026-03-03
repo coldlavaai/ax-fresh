@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   SpeedIcon,
   ValueIcon,
@@ -399,12 +400,12 @@ function HeroSection() {
           transition={{ duration: 0.8, delay: 0.9 }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <a
-            href="#destinations"
+          <Link
+            href="/trip-builder"
             className="px-12 py-5 bg-white text-text-primary font-bold text-lg rounded-full hover:shadow-[0_10px_40px_rgba(255,255,255,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105"
           >
             Start Planning Now →
-          </a>
+          </Link>
           <a
             href="#how-it-works"
             className="px-12 py-5 border-2 border-white/50 text-white font-bold text-lg rounded-full hover:bg-white/10 backdrop-blur-sm transition-all duration-300 hover:border-white"
