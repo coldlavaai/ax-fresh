@@ -27,7 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body>{children}</body>
+      <head>
+        <link rel="stylesheet" href="/chat-widget-v4.css" />
+      </head>
+      <body>
+        {children}
+        <script src="/chat-widget-v4.js" async></script>
+      </body>
     </html>
   );
 }

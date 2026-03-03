@@ -161,6 +161,33 @@ const videoSections = [
   { title: "Promotional Videos", id: "promo" },
 ];
 
+const testimonials = [
+  {
+    name: "Sarah Mitchell",
+    role: "Business Executive",
+    location: "London",
+    rating: 5,
+    text: "The AI Trip Builder saved me hours of research. Within 20 minutes I had a fully personalised Italian itinerary that was absolutely perfect. The price was 12% lower than quotes from traditional agents!",
+    image: "https://i.pravatar.cc/150?img=47"
+  },
+  {
+    name: "James Patterson",
+    role: "Consultant",
+    location: "Manchester",
+    rating: 5,
+    text: "As a busy professional, I don't have time to plan complex trips. AX made it effortless - the quality of hotels and experiences exceeded my expectations. Will definitely use again!",
+    image: "https://i.pravatar.cc/150?img=12"
+  },
+  {
+    name: "Emma Rodriguez",
+    role: "Tech Founder",
+    location: "Edinburgh",
+    rating: 5,
+    text: "The perfect blend of AI efficiency and human expertise. My Maldives trip was flawlessly executed with 24/7 support. Worth every penny and more!",
+    image: "https://i.pravatar.cc/150?img=45"
+  }
+];
+
 export default function Home() {
   return (
     <main className="overflow-x-hidden">
@@ -172,6 +199,7 @@ export default function Home() {
       <HowItWorksSection />
       <ParallaxBreak />
       <TrustSection />
+      <TestimonialsSection />
       <FAQSection />
       <VideoSection />
       <InvestorSection />
@@ -373,16 +401,37 @@ function HeroSection() {
         >
           <a
             href="#destinations"
-            className="px-10 py-4 bg-white text-text-primary font-semibold rounded-full hover:shadow-[0_10px_40px_rgba(255,255,255,0.3)] transition-all duration-300 hover:-translate-y-0.5"
+            className="px-12 py-5 bg-white text-text-primary font-bold text-lg rounded-full hover:shadow-[0_10px_40px_rgba(255,255,255,0.4)] transition-all duration-300 hover:-translate-y-1 hover:scale-105"
           >
-            Start Exploring
+            Start Planning Now →
           </a>
           <a
             href="#how-it-works"
-            className="px-10 py-4 border-2 border-white/40 text-white font-semibold rounded-full hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
+            className="px-12 py-5 border-2 border-white/50 text-white font-bold text-lg rounded-full hover:bg-white/10 backdrop-blur-sm transition-all duration-300 hover:border-white"
           >
             How It Works
           </a>
+        </motion.div>
+
+        {/* Trust Badges in Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.1 }}
+          className="flex flex-wrap items-center justify-center gap-6 mt-16"
+        >
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+            <ShieldIcon className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">ATOL Protected</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+            <PhoneIcon className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">24/7 Support</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+            <StarIcon className="w-5 h-5 text-white" />
+            <span className="text-white text-sm font-medium">5★ Rated</span>
+          </div>
         </motion.div>
       </div>
 
@@ -672,6 +721,71 @@ function TrustSection() {
           ))}
         </div>
       </motion.div>
+    </section>
+  );
+}
+
+function TestimonialsSection() {
+  return (
+    <section id="testimonials" className="py-28 md:py-36 px-6 bg-white">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={fadeUp}
+          custom={0}
+          className="text-center mb-20"
+        >
+          <p className="text-sunset-500 tracking-[0.25em] uppercase text-sm font-medium mb-4">
+            Client Stories
+          </p>
+          <h2 className="font-[family-name:var(--font-heading)] text-4xl md:text-5xl lg:text-6xl font-bold">
+            Loved by <span className="italic font-normal text-sunset-500">Professionals</span>
+          </h2>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-50px" }}
+          variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          {testimonials.map((testimonial, i) => (
+            <motion.div
+              key={testimonial.name}
+              variants={fadeUp}
+              custom={i}
+              className="bg-warm-50 rounded-2xl p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-500"
+            >
+              <div className="flex items-center gap-1 mb-4">
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <StarIcon key={i} className="w-5 h-5 text-sunset-500 fill-current" />
+                ))}
+              </div>
+              <p className="text-text-secondary leading-relaxed mb-6 text-[15px]">
+                &ldquo;{testimonial.text}&rdquo;
+              </p>
+              <div className="flex items-center gap-4">
+                <img
+                  src={testimonial.image}
+                  alt={testimonial.name}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+                <div>
+                  <div className="font-[family-name:var(--font-heading)] font-semibold text-text-primary">
+                    {testimonial.name}
+                  </div>
+                  <div className="text-sm text-text-muted">
+                    {testimonial.role} · {testimonial.location}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
     </section>
   );
 }
